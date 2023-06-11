@@ -43,9 +43,9 @@ class Trainer():
         self.net = net
         self.is_train = is_train
         self.spatial = spatial
-        self.model_name = '%s [%s]'%(model,net)
+        self.model_name = f'{model} [{net}]'
 
-        if(self.model == 'lpips'): # pretrained net + linear layer
+        if (self.model == 'lpips'): # pretrained net + linear layer
             self.net = lpips.LPIPS(pretrained=not is_train, net=net, version=version, lpips=True, spatial=spatial, 
                 pnet_rand=pnet_rand, pnet_tune=pnet_tune, 
                 use_dropout=True, model_path=model_path, eval_mode=False)
@@ -58,7 +58,7 @@ class Trainer():
             self.net = lpips.DSSIM(use_gpu=use_gpu,colorspace=colorspace)
             self.model_name = 'SSIM'
         else:
-            raise ValueError("Model [%s] not recognized." % self.model)
+            raise ValueError(f"Model [{self.model}] not recognized.")
 
         self.parameters = list(self.net.parameters())
 
@@ -175,15 +175,15 @@ class Trainer():
 
     # helper saving function that can be used by subclasses
     def save_network(self, network, path, network_label, epoch_label):
-        save_filename = '%s_net_%s.pth' % (epoch_label, network_label)
+        save_filename = f'{epoch_label}_net_{network_label}.pth'
         save_path = os.path.join(path, save_filename)
         torch.save(network.state_dict(), save_path)
 
     # helper loading function that can be used by subclasses
     def load_network(self, network, network_label, epoch_label):
-        save_filename = '%s_net_%s.pth' % (epoch_label, network_label)
+        save_filename = f'{epoch_label}_net_{network_label}.pth'
         save_path = os.path.join(self.save_dir, save_filename)
-        print('Loading network from %s'%save_path)
+        print(f'Loading network from {save_path}')
         network.load_state_dict(torch.load(save_path))
 
     def update_learning_rate(self,nepoch_decay):

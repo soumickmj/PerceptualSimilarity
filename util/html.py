@@ -45,10 +45,9 @@ class HTML:
                             p(txt)
 
     def save(self,file='index'):
-        html_file = '%s/%s.html' % (self.web_dir,file)
-        f = open(html_file, 'wt')
-        f.write(self.doc.render())
-        f.close()
+        html_file = f'{self.web_dir}/{file}.html'
+        with open(html_file, 'wt') as f:
+            f.write(self.doc.render())
 
 
 if __name__ == '__main__':

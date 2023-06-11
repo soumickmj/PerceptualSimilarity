@@ -55,49 +55,46 @@ print('Loading %i instances from'%dataset_size,opt.datasets)
 visualizer = Visualizer(opt)
 
 total_steps = 0
-fid = open(os.path.join(opt.checkpoints_dir,opt.name,'train_log.txt'),'w+')
-for epoch in range(1, opt.nepoch + opt.nepoch_decay + 1):
-    epoch_start_time = time.time()
-    for i, data in enumerate(dataset):
-        iter_start_time = time.time()
-        total_steps += opt.batch_size
-        epoch_iter = total_steps - dataset_size * (epoch - 1)
+with open(os.path.join(opt.checkpoints_dir,opt.name,'train_log.txt'),'w+') as fid:
+    for epoch in range(1, opt.nepoch + opt.nepoch_decay + 1):
+        epoch_start_time = time.time()
+        for i, data in enumerate(dataset):
+            iter_start_time = time.time()
+            total_steps += opt.batch_size
+            epoch_iter = total_steps - dataset_size * (epoch - 1)
 
-        trainer.set_input(data)
-        trainer.optimize_parameters()
+            trainer.set_input(data)
+            trainer.optimize_parameters()
 
-        if total_steps % opt.display_freq == 0:
-            visualizer.display_current_results(trainer.get_current_visuals(), epoch)
+            if total_steps % opt.display_freq == 0:
+                visualizer.display_current_results(trainer.get_current_visuals(), epoch)
 
-        if total_steps % opt.print_freq == 0:
-            errors = trainer.get_current_errors()
-            t = (time.time()-iter_start_time)/opt.batch_size
-            t2o = (time.time()-epoch_start_time)/3600.
-            t2 = t2o*D/(i+.0001)
-            visualizer.print_current_errors(epoch, epoch_iter, errors, t, t2=t2, t2o=t2o, fid=fid)
+            if total_steps % opt.print_freq == 0:
+                errors = trainer.get_current_errors()
+                t = (time.time()-iter_start_time)/opt.batch_size
+                t2o = (time.time()-epoch_start_time)/3600.
+                t2 = t2o*D/(i+.0001)
+                visualizer.print_current_errors(epoch, epoch_iter, errors, t, t2=t2, t2o=t2o, fid=fid)
 
-            for key in errors.keys():
-                visualizer.plot_current_errors_save(epoch, float(epoch_iter)/dataset_size, opt, errors, keys=[key,], name=key, to_plot=opt.train_plot)
+                for key in errors.keys():
+                    visualizer.plot_current_errors_save(epoch, float(epoch_iter)/dataset_size, opt, errors, keys=[key,], name=key, to_plot=opt.train_plot)
 
-            if opt.display_id > 0:
-                visualizer.plot_current_errors(epoch, float(epoch_iter)/dataset_size, opt, errors)
+                if opt.display_id > 0:
+                    visualizer.plot_current_errors(epoch, float(epoch_iter)/dataset_size, opt, errors)
 
-        if total_steps % opt.save_latest_freq == 0:
-            print('saving the latest model (epoch %d, total_steps %d)' %
+            if total_steps % opt.save_latest_freq == 0:
+                print('saving the latest model (epoch %d, total_steps %d)' %
+                      (epoch, total_steps))
+                trainer.save(opt.save_dir, 'latest')
+
+        if epoch % opt.save_epoch_freq == 0:
+            print('saving the model at the end of epoch %d, iters %d' %
                   (epoch, total_steps))
             trainer.save(opt.save_dir, 'latest')
+            trainer.save(opt.save_dir, epoch)
 
-    if epoch % opt.save_epoch_freq == 0:
-        print('saving the model at the end of epoch %d, iters %d' %
-              (epoch, total_steps))
-        trainer.save(opt.save_dir, 'latest')
-        trainer.save(opt.save_dir, epoch)
+        print('End of epoch %d / %d \t Time Taken: %d sec' %
+              (epoch, opt.nepoch + opt.nepoch_decay, time.time() - epoch_start_time))
 
-    print('End of epoch %d / %d \t Time Taken: %d sec' %
-          (epoch, opt.nepoch + opt.nepoch_decay, time.time() - epoch_start_time))
-
-    if epoch > opt.nepoch:
-        trainer.update_learning_rate(opt.nepoch_decay)
-
-# trainer.save_done(True)
-fid.close()
+        if epoch > opt.nepoch:
+            trainer.update_learning_rate(opt.nepoch_decay)

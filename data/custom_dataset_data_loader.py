@@ -11,7 +11,7 @@ def CreateDataset(dataroots,dataset_mode='2afc',load_size=64,):
         from data.dataset.jnd_dataset import JNDDataset
         dataset = JNDDataset()
     else:
-        raise ValueError("Dataset Mode [%s] not recognized."%self.dataset_mode)
+        raise ValueError(f"Dataset Mode [{self.dataset_mode}] not recognized.")
 
     dataset.initialize(dataroots,load_size=load_size)
     return dataset

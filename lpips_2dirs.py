@@ -16,23 +16,20 @@ loss_fn = lpips.LPIPS(net='alex',version=opt.version)
 if(opt.use_gpu):
 	loss_fn.cuda()
 
-# crawl directories
-f = open(opt.out,'w')
-files = os.listdir(opt.dir0)
+with open(opt.out,'w') as f:
+	files = os.listdir(opt.dir0)
 
-for file in files:
-	if(os.path.exists(os.path.join(opt.dir1,file))):
-		# Load images
-		img0 = lpips.im2tensor(lpips.load_image(os.path.join(opt.dir0,file))) # RGB image from [-1,1]
-		img1 = lpips.im2tensor(lpips.load_image(os.path.join(opt.dir1,file)))
+	for file in files:
+		if(os.path.exists(os.path.join(opt.dir1,file))):
+			# Load images
+			img0 = lpips.im2tensor(lpips.load_image(os.path.join(opt.dir0,file))) # RGB image from [-1,1]
+			img1 = lpips.im2tensor(lpips.load_image(os.path.join(opt.dir1,file)))
 
-		if(opt.use_gpu):
-			img0 = img0.cuda()
-			img1 = img1.cuda()
+			if(opt.use_gpu):
+				img0 = img0.cuda()
+				img1 = img1.cuda()
 
-		# Compute distance
-		dist01 = loss_fn.forward(img0,img1)
-		print('%s: %.3f'%(file,dist01))
-		f.writelines('%s: %.6f\n'%(file,dist01))
-
-f.close()
+			# Compute distance
+			dist01 = loss_fn.forward(img0,img1)
+			print('%s: %.3f'%(file,dist01))
+			f.writelines('%s: %.6f\n'%(file,dist01))
