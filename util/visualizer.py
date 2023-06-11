@@ -35,7 +35,7 @@ class Visualizer():
         util.mkdirs([self.web_dir,])
         if self.use_html:
             self.img_dir = os.path.join(self.web_dir, 'images')
-            print('create web directory %s...' % self.web_dir)
+            print(f'create web directory {self.web_dir}...')
             util.mkdirs([self.img_dir,])
 
     # |visuals|: dictionary of images to display or save
@@ -45,14 +45,12 @@ class Visualizer():
             if(nrows is None):
                 nrows = int(math.ceil(len(visuals.items()) / 2.0))
             images = []
-            idx = 0
-            for label, image_numpy in visuals.items():
+            for idx, (label, image_numpy) in enumerate(visuals.items()):
                 title += " | " if idx % nrows == 0 else ", "
                 title += label
                 img = image_numpy.transpose([2, 0, 1])
                 img = zoom_to_res(img,res=res,order=0)
                 images.append(img)
-                idx += 1
             if len(visuals.items()) % 2 != 0:
                 white_image = np.ones_like(image_numpy.transpose([2, 0, 1]))*255
                 white_image = zoom_to_res(white_image,res=res,order=0)
@@ -69,13 +67,10 @@ class Visualizer():
             self.display_cnt_high = np.maximum(self.display_cnt_high, self.display_cnt)
 
             # update website
-            webpage = html.HTML(self.web_dir, 'Experiment name = %s' % self.name, reflesh=1)
+            webpage = html.HTML(self.web_dir, f'Experiment name = {self.name}', reflesh=1)
             for n in range(epoch, 0, -1):
                 webpage.add_header('epoch [%d]' % n)
-                if(n==epoch):
-                    high = self.display_cnt
-                else:
-                    high = self.display_cnt_high
+                high = self.display_cnt if (n==epoch) else self.display_cnt_high
                 for c in range(high-1,-1,-1):
                     ims = []
                     txts = []
@@ -97,11 +92,7 @@ class Visualizer():
         self.plot_data['Y'].append([errors[k] for k in self.plot_data['legend']])
 
         # embed()
-        if(keys=='+ALL'):
-            plot_keys = self.plot_data['legend']
-        else:
-            plot_keys = keys
-
+        plot_keys = self.plot_data['legend'] if (keys=='+ALL') else keys
         if(to_plot):
             (f,ax) = plt.subplots(1,1)
         for (k,kname) in enumerate(plot_keys):
@@ -113,11 +104,11 @@ class Visualizer():
             np.save(os.path.join(self.web_dir,'%s_x')%kname,x)
             np.save(os.path.join(self.web_dir,'%s_y')%kname,y)
 
-        if(to_plot):
+        if to_plot:
             plt.legend(loc=0,fontsize='small')
             plt.xlabel('epoch')
             plt.ylabel('Value')
-            f.savefig(os.path.join(self.web_dir,'%s.png'%name))
+            f.savefig(os.path.join(self.web_dir, f'{name}.png'))
             f.clf()
             plt.close()
 
@@ -128,14 +119,18 @@ class Visualizer():
         self.plot_data['X'].append(epoch + counter_ratio)
         self.plot_data['Y'].append([errors[k] for k in self.plot_data['legend']])
         self.vis.line(
-            X=np.stack([np.array(self.plot_data['X'])]*len(self.plot_data['legend']),1),
+            X=np.stack(
+                [np.array(self.plot_data['X'])] * len(self.plot_data['legend']), 1
+            ),
             Y=np.array(self.plot_data['Y']),
             opts={
-                'title': self.name + ' loss over time',
+                'title': f'{self.name} loss over time',
                 'legend': self.plot_data['legend'],
                 'xlabel': 'epoch',
-                'ylabel': 'loss'},
-            win=self.display_id)
+                'ylabel': 'loss',
+            },
+            win=self.display_id,
+        )
 
     # errors: same format as |errors| of plotCurrentErrors
     def print_current_errors(self, epoch, i, errors, t, t2=-1, t2o=-1, fid=None):
@@ -155,7 +150,7 @@ class Visualizer():
         links = []
 
         for name, image_numpy, txt in zip(names, images, in_txts):
-            image_name = '%s_%s.png' % (prefix, name)
+            image_name = f'{prefix}_{name}.png'
             save_path = os.path.join(image_dir, image_name)
             if(res is not None):
                 util.save_image(zoom_to_res(image_numpy,res=res,axis=2), save_path)
@@ -181,7 +176,7 @@ class Visualizer():
         links = []
 
         for label, image_numpy in zip(names, images):
-            image_name = '%s.jpg' % (label,)
+            image_name = f'{label}.jpg'
             save_path = os.path.join(image_dir, image_name)
             util.save_image(image_numpy, save_path)
 

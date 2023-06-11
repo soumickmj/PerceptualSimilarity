@@ -58,9 +58,10 @@ class LPIPS(nn.Module):
         """
 
         super(LPIPS, self).__init__()
-        if(verbose):
-            print('Setting up [%s] perceptual loss: trunk [%s], v[%s], spatial [%s]'%
-                ('LPIPS' if lpips else 'baseline', net, version, 'on' if spatial else 'off'))
+        if verbose:
+            print(
+                f"Setting up [{'LPIPS' if lpips else 'baseline'}] perceptual loss: trunk [{net}], v[{version}], spatial [{'on' if spatial else 'off'}]"
+            )
 
         self.pnet_type = net
         self.pnet_tune = pnet_tune
@@ -83,7 +84,7 @@ class LPIPS(nn.Module):
 
         self.net = net_type(pretrained=not self.pnet_rand, requires_grad=self.pnet_tune)
 
-        if(lpips):
+        if lpips:
             self.lin0 = NetLinLayer(self.chns[0], use_dropout=use_dropout)
             self.lin1 = NetLinLayer(self.chns[1], use_dropout=use_dropout)
             self.lin2 = NetLinLayer(self.chns[2], use_dropout=use_dropout)
@@ -96,14 +97,20 @@ class LPIPS(nn.Module):
                 self.lins+=[self.lin5,self.lin6]
             self.lins = nn.ModuleList(self.lins)
 
-            if(pretrained):
-                if(model_path is None):
+            if pretrained:
+                if (model_path is None):
                     import inspect
                     import os
-                    model_path = os.path.abspath(os.path.join(inspect.getfile(self.__init__), '..', 'weights/v%s/%s.pth'%(version,net)))
+                    model_path = os.path.abspath(
+                        os.path.join(
+                            inspect.getfile(self.__init__),
+                            '..',
+                            f'weights/v{version}/{net}.pth',
+                        )
+                    )
 
-                if(verbose):
-                    print('Loading model from: %s'%model_path)
+                if verbose:
+                    print(f'Loading model from: {model_path}')
                 self.load_state_dict(torch.load(model_path, map_location='cpu'), strict=False)          
 
         if(eval_mode):
@@ -123,25 +130,25 @@ class LPIPS(nn.Module):
             feats0[kk], feats1[kk] = lpips.normalize_tensor(outs0[kk]), lpips.normalize_tensor(outs1[kk])
             diffs[kk] = (feats0[kk]-feats1[kk])**2
 
-        if(self.lpips):
-            if(self.spatial):
-                res = [upsample(self.lins[kk](diffs[kk]), out_HW=in0.shape[2:]) for kk in range(self.L)]
-            else:
-                res = [spatial_average(self.lins[kk](diffs[kk]), keepdim=True) for kk in range(self.L)]
+        if self.lpips:
+            res = (
+                [
+                    upsample(self.lins[kk](diffs[kk]), out_HW=in0.shape[2:])
+                    for kk in range(self.L)
+                ]
+                if self.spatial
+                else [
+                    spatial_average(self.lins[kk](diffs[kk]), keepdim=True)
+                    for kk in range(self.L)
+                ]
+            )
+        elif self.spatial:
+            res = [upsample(diffs[kk].sum(dim=1,keepdim=True), out_HW=in0.shape[2:]) for kk in range(self.L)]
         else:
-            if(self.spatial):
-                res = [upsample(diffs[kk].sum(dim=1,keepdim=True), out_HW=in0.shape[2:]) for kk in range(self.L)]
-            else:
-                res = [spatial_average(diffs[kk].sum(dim=1,keepdim=True), keepdim=True) for kk in range(self.L)]
+            res = [spatial_average(diffs[kk].sum(dim=1,keepdim=True), keepdim=True) for kk in range(self.L)]
 
-        val = 0
-        for l in range(self.L):
-            val += res[l]
-        
-        if(retPerLayer):
-            return (val, res)
-        else:
-            return val
+        val = sum(res[l] for l in range(self.L))
+        return (val, res) if retPerLayer else val
 
 
 class ScalingLayer(nn.Module):
@@ -206,10 +213,14 @@ class L2(FakeNet):
     def forward(self, in0, in1, retPerLayer=None):
         assert(in0.size()[0]==1) # currently only supports batchSize 1
 
-        if(self.colorspace=='RGB'):
+        if (self.colorspace=='RGB'):
             (N,C,X,Y) = in0.size()
-            value = torch.mean(torch.mean(torch.mean((in0-in1)**2,dim=1).view(N,1,X,Y),dim=2).view(N,1,1,Y),dim=3).view(N)
-            return value
+            return torch.mean(
+                torch.mean(
+                    torch.mean((in0 - in1) ** 2, dim=1).view(N, 1, X, Y), dim=2
+                ).view(N, 1, 1, Y),
+                dim=3,
+            ).view(N)
         elif(self.colorspace=='Lab'):
             value = lpips.l2(lpips.tensor2np(lpips.tensor2tensorlab(in0.data,to_norm=False)), 
                 lpips.tensor2np(lpips.tensor2tensorlab(in1.data,to_norm=False)), range=100.).astype('float')
@@ -234,8 +245,6 @@ class DSSIM(FakeNet):
         return ret_var
 
 def print_network(net):
-    num_params = 0
-    for param in net.parameters():
-        num_params += param.numel()
+    num_params = sum(param.numel() for param in net.parameters())
     print('Network',net)
     print('Total number of parameters: %d' % num_params)

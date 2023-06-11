@@ -32,10 +32,10 @@ trainer.initialize(model=opt.model, net=opt.net, colorspace=opt.colorspace,
 	model_path=opt.model_path, use_gpu=opt.use_gpu, pnet_rand=opt.from_scratch, pnet_tune=opt.train_trunk,
 	version=opt.version, gpu_ids=opt.gpu_ids)
 
-if(opt.model in ['net-lin','net']):
-	print('Testing model [%s]-[%s]'%(opt.model,opt.net))
-elif(opt.model in ['l2','ssim']):
-	print('Testing model [%s]-[%s]'%(opt.model,opt.colorspace))
+if (opt.model in ['net-lin','net']):
+	print(f'Testing model [{opt.model}]-[{opt.net}]')
+elif (opt.model in ['l2','ssim']):
+	print(f'Testing model [{opt.model}]-[{opt.colorspace}]')
 
 # initialize data loader
 for dataset in opt.datasets:
